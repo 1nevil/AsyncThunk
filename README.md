@@ -1,46 +1,85 @@
-# Getting Started with Create React App and Redux
+### AsyncThunk Implimantation
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app), using the [Redux](https://redux.js.org/) and [Redux Toolkit](https://redux-toolkit.js.org/) template.
+##### Why AsyncThunk
 
-## Available Scripts
+- Its provide some extra features for the api requests.
+- Inbuilt support inside redux so no need to install extarnal middlewares.
+- Internally use emmer.js so no need to make copy of original state.
+- That's why no need to use of mutation. ex : [...oldState,newValue] instead of oldstate.push(newValue).
 
-In the project directory, you can run:
+#### create feature/api.js
 
-### `npm start`
+- Sapreate file for network request.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```
+    export function fetchItems() {
+      return axios.[get,post,delete,patch]("http://localhost:8080/cart");
+    }
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+#### import **AsyncThunk and ApiFunction** in Feature/slice.js
 
-### `npm test`
+```
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { fetchItems } from "./api.js";
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
 
-### `npm run build`
+### Initialization
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```
+const initialState = {
+  items: [],
+  status: "idle",
+};
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Fetching data using createAsyncThunk function
 
-### `npm run eject`
+```
+export const fetchCartItems = createAsyncThunk("cart/fetchItems", async () => {
+  const response = await fetchItems();
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+  // The value we return becomes the `fulfilled` action payload
+  // same line for the pending , rejeted
+  return response.data;
+});
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Reducers , Builder function and action slice
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- Builder callback provide some extra features for api.
+- Like Fullfiled,Rejected,Pending.
+- So we directly set variable inside builder function
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```
+export const carttSlice = createSlice({
+  name: "cart",
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchCartItems.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchCartItems.fulfilled, (state, action) => {
+        state.status = "idle";
+        state.items = action.payload;
+      }).addCase(fetchCartItems.rejected, (state, action) => {
+        state.status = "idle";
+        state.items = action.payload;
+      })
 
-## Learn More
+  },
+});
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+export default carttSlice.reducer;
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```
+
+##### Same toolkit binding with react.
+
+### ESLint installation in vite app
+
+[Eslint DEV.to Blog Post](https://dev.to/bushblade/add-eslint-to-a-react-vite-project-4pib)
